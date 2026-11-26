@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Toaster } from "@/components/ui/sonner"
-import { supabase } from "@/lib/supabase"
+import { supabase, supabaseHost } from "@/lib/supabase"
 import { cn } from "@/lib/utils"
 import { LeadsPage } from "./LeadsPage"
 import { ProgramsPage } from "./ProgramsPage"
@@ -35,6 +35,20 @@ function Shell({ children }: { children: React.ReactNode }) {
   )
 }
 
+/** Понятное объяснение ошибки входа вместо общего «неверный пароль». */
+function explain(error: { message?: string; status?: number; code?: string; name?: string }) {
+  const m = `${error.code ?? ""} ${error.message ?? ""}`.toLowerCase()
+  if (m.includes("email_not_confirmed") || m.includes("not confirmed"))
+    return "Почта не подтверждена. В Supabase → Authentication → Users откройте пользователя и подтвердите почту (Confirm email) или создайте его заново с галочкой Auto Confirm."
+  if (m.includes("invalid_credentials") || m.includes("invalid login credentials"))
+    return `Неверная почта или пароль для проекта ${supabaseHost}. Проверьте, что пользователь создан именно в этом проекте Supabase.`
+  if (m.includes("api key") || m.includes("apikey") || error.status === 401)
+    return "Ключ Supabase не подходит. Проверьте переменную VITE_SUPABASE_ANON_KEY в Vercel (ключ из того же проекта) и пересоберите сайт."
+  if (error.name === "AuthRetryableFetchError" || m.includes("fetch") || m.includes("network") || error.status === 0)
+    return `Не удаётся связаться с ${supabaseHost}. Проверьте переменную VITE_SUPABASE_URL в Vercel (вида https://xxxx.supabase.co) и пересоберите сайт.`
+  return `Ошибка входа: ${error.message ?? "неизвестная"}${error.status ? ` (код ${error.status})` : ""}`
+}
+
 function Login() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -44,9 +58,9 @@ function Login() {
     e.preventDefault()
     setBusy(true)
     setError("")
-    const { error } = await supabase!.auth.signInWithPassword({ email, password })
+    const { error } = await supabase!.auth.signInWithPassword({ email: email.trim(), password })
     setBusy(false)
-    if (error) setError("Неверная почта или пароль")
+    if (error) setError(explain(error))
   }
   return (
     <Shell>
@@ -60,10 +74,11 @@ function Login() {
           <Label htmlFor="pw">Пароль</Label>
           <Input id="pw" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
         </div>
-        {error && <p className="text-sm text-destructive">{error}</p>}
+        {error && <p className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}
         <Button type="submit" className="w-full" size="lg" disabled={busy}>
           {busy ? "Входим…" : "Войти"}
         </Button>
+        <p className="text-center text-xs text-muted-foreground">Проект: {supabaseHost}</p>
       </form>
     </Shell>
   )
