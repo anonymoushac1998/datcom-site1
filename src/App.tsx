@@ -16,7 +16,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { achievements, faq, gallery, programs, steps } from "@/content"
+import { achievements, steps } from "@/content"
+import { saveLead, useSiteContent, type SiteContent } from "@/lib/data"
 import { cn } from "@/lib/utils"
 
 const EASE = [0.22, 1, 0.36, 1] as const
@@ -304,7 +305,7 @@ function Marquee() {
 
 /* ───────────── бенто: цифры и история ───────────── */
 
-function Bento() {
+function Bento({ stats }: { stats: SiteContent["stats"] }) {
   const card = "relative overflow-hidden rounded-[1.75rem] border bg-card p-5 md:p-7"
   return (
     <section id="about" className="mx-auto max-w-6xl px-4 py-24 md:py-32">
@@ -318,26 +319,26 @@ function Bento() {
           <p className="relative text-sm font-medium opacity-80">Студентов отправили на учёбу</p>
           <div className="relative">
             <p className="text-7xl font-extrabold tracking-tight md:text-8xl">
-              <Counter value={2100} suffix="+" />
+              <Counter value={stats.students_total} suffix="+" />
             </p>
-            <p className="mt-2 max-w-xs opacity-80">за 5 лет. 650 уехали в 2025 году, 700 уже поступили на 2026 год.</p>
+            <p className="mt-2 max-w-xs opacity-80">за {stats.years} лет. {stats.students_2025} уехали в 2025 году, {stats.students_2026} уже поступили на 2026 год.</p>
           </div>
         </Reveal>
         <Reveal delay={0.05} className={cn(card, "col-span-2")}>
           <p className="text-6xl font-extrabold tracking-tight text-primary">
-            <Counter value={80} suffix="%" />
+            <Counter value={stats.recommend_pct} suffix="%" />
           </p>
           <p className="mt-3 text-muted-foreground">клиентов приходят по рекомендациям друзей, знакомых и бывших студентов</p>
         </Reveal>
         <Reveal delay={0.1} className={card}>
           <p className="text-5xl font-extrabold tracking-tight">
-            <Counter value={5} />
+            <Counter value={stats.years} />
           </p>
           <p className="mt-3 text-sm text-muted-foreground">лет ни одного студента без приглашения</p>
         </Reveal>
         <Reveal delay={0.15} className={card}>
           <p className="text-5xl font-extrabold tracking-tight">
-            <Counter value={3} />
+            <Counter value={stats.countries} />
           </p>
           <p className="mt-3 text-sm text-muted-foreground">страны: Кыргызстан, Казахстан, Россия</p>
         </Reveal>
@@ -372,9 +373,11 @@ function Bento() {
 
 /* ───────────── программы ───────────── */
 
-function Programs() {
-  const [active, setActive] = useState(programs[0].id)
-  const p = programs.find((x) => x.id === active)!
+function Programs({ programs }: { programs: SiteContent["programs"] }) {
+  const [activeId, setActive] = useState<string | null>(null)
+  const p = programs.find((x) => x.id === activeId) ?? programs[0]
+  const active = p?.id
+  if (!p) return null
   return (
     <section id="programs" className="relative overflow-hidden bg-[#020a1c] py-24 text-white md:py-32">
       <div className="pointer-events-none absolute top-0 left-1/2 h-96 w-[60rem] -translate-x-1/2 rounded-full bg-primary/40 blur-[140px]" />
@@ -493,7 +496,7 @@ function Path() {
 
 /* ───────────── жизнь в Китае: перетаскиваемая лента ───────────── */
 
-function Life() {
+function Life({ gallery }: { gallery: SiteContent["gallery"] }) {
   const wrap = useRef<HTMLDivElement>(null)
   const track = useRef<HTMLDivElement>(null)
   const [limit, setLimit] = useState(0)
@@ -504,7 +507,7 @@ function Life() {
     calc()
     addEventListener("resize", calc)
     return () => removeEventListener("resize", calc)
-  }, [])
+  }, [gallery])
   return (
     <section id="life" className="overflow-hidden bg-muted/50 py-24 md:py-32">
       <div className="mx-auto mb-12 flex max-w-6xl flex-col justify-between gap-4 px-4 md:flex-row md:items-end">
@@ -539,7 +542,7 @@ function Life() {
 
 /* ───────────── FAQ ───────────── */
 
-function Faq() {
+function Faq({ faq }: { faq: SiteContent["faq"] }) {
   const [open, setOpen] = useState<number | null>(0)
   return (
     <section id="faq" className="mx-auto max-w-4xl px-4 py-24 md:py-32">
@@ -617,8 +620,12 @@ function Contact() {
               onSubmit={(e) => {
                 e.preventDefault()
                 const f = new FormData(e.currentTarget)
-                const text = `Здравствуйте! Хочу консультацию Datcom.\nИмя: ${f.get("name") ?? ""}\nТелефон: ${f.get("phone") ?? ""}\nИнтересует: ${f.get("msg") ?? ""}`
+                const name = String(f.get("name") ?? "").trim()
+                const phone = String(f.get("phone") ?? "").trim()
+                const message = String(f.get("msg") ?? "").trim()
+                const text = `Здравствуйте! Хочу консультацию Datcom.\nИмя: ${name}\nТелефон: ${phone}\nИнтересует: ${message}`
                 window.open(`${WA}?text=${encodeURIComponent(text)}`, "_blank")
+                void saveLead({ name, phone, message })
               }}
             >
               <p className="text-2xl font-bold">Заявка на консультацию</p>
@@ -690,17 +697,18 @@ function WhatsAppFab() {
 }
 
 export default function App() {
+  const content = useSiteContent()
   return (
     <MotionConfig reducedMotion="user">
       <ScrollProgress />
       <Nav />
       <main>
         <Hero />
-        <Bento />
-        <Programs />
+        <Bento stats={content.stats} />
+        <Programs programs={content.programs} />
         <Path />
-        <Life />
-        <Faq />
+        <Life gallery={content.gallery} />
+        <Faq faq={content.faq} />
         <Contact />
       </main>
       <Footer />
