@@ -10,13 +10,13 @@ import {
   useSpring,
   useTransform,
 } from "motion/react"
-import { ArrowRight, ArrowUpRight, MapPin, MessageCircle, Phone, Plane, Plus } from "lucide-react"
+import { ArrowRight, ArrowUpRight, GraduationCap, MapPin, MessageCircle, Phone, Plane, Plus } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { achievements, steps } from "@/content"
+import { achievements, steps, type University } from "@/content"
 import { saveLead, useSiteContent, type SiteContent } from "@/lib/data"
 import { cn } from "@/lib/utils"
 
@@ -142,6 +142,7 @@ function Nav() {
   const links = [
     ["О нас", "#about"],
     ["Программы", "#programs"],
+    ["Университеты", "#universities"],
     ["Путь", "#path"],
     ["Жизнь", "#life"],
     ["FAQ", "#faq"],
@@ -444,6 +445,143 @@ function Programs({ programs }: { programs: SiteContent["programs"] }) {
   )
 }
 
+/* ───────────── университеты ───────────── */
+
+const KIND_LABEL: Record<University["kind"], string> = { university: "Университет", college: "Колледж" }
+
+function UniversityCard({ u }: { u: University }) {
+  const text = `Здравствуйте! Хочу узнать о поступлении: ${u.name} (${u.city}).`
+  return (
+    <motion.article
+      layout
+      initial={{ opacity: 0, scale: 0.96, y: 20 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.96 }}
+      transition={{ duration: 0.45, ease: EASE }}
+      whileHover={{ y: -6 }}
+      className={cn("group flex flex-col overflow-hidden rounded-[1.75rem] border bg-card shadow-sm transition-shadow hover:shadow-2xl hover:shadow-primary/10", u.featured && "ring-2 ring-primary/60")}
+    >
+      <div className="relative aspect-[16/10] overflow-hidden">
+        {u.image ? (
+          <img src={u.image} alt={u.name} loading="lazy" className="size-full object-cover transition-transform duration-700 group-hover:scale-105" />
+        ) : (
+          <div className="flex size-full items-center justify-center bg-gradient-to-br from-[#01214a] via-primary to-sky-500">
+            <GraduationCap className="size-14 text-white/80" />
+          </div>
+        )}
+        <div className="absolute inset-x-0 top-0 flex justify-between p-3">
+          <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-[#01214a] backdrop-blur">{KIND_LABEL[u.kind]}</span>
+          {u.featured && <span className="rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">Только через Datcom</span>}
+        </div>
+      </div>
+      <div className="flex flex-1 flex-col p-6">
+        <h3 className="text-xl leading-snug font-bold">{u.name}</h3>
+        <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
+          <MapPin className="size-4 text-primary" /> {[u.city, u.province].filter(Boolean).join(", провинция ")}
+        </p>
+        <dl className="mt-4 space-y-3 text-sm">
+          {u.programs && (
+            <div>
+              <dt className="text-muted-foreground">Программы</dt>
+              <dd className="font-medium">{u.programs}</dd>
+            </div>
+          )}
+          {u.conditions && (
+            <div>
+              <dt className="text-muted-foreground">Условия</dt>
+              <dd className="font-medium">{u.conditions}</dd>
+            </div>
+          )}
+          {u.cost && (
+            <div>
+              <dt className="text-muted-foreground">Стоимость</dt>
+              <dd className="font-semibold text-primary">{u.cost}</dd>
+            </div>
+          )}
+        </dl>
+        <div className="mt-auto flex flex-wrap gap-2 pt-6">
+          <Button asChild className="rounded-full">
+            <a href={`${WA}?text=${encodeURIComponent(text)}`} target="_blank" rel="noreferrer">
+              <MessageCircle /> Узнать о поступлении
+            </a>
+          </Button>
+          {u.video_url && (
+            <Button asChild variant="outline" className="rounded-full">
+              <a href={u.video_url} target="_blank" rel="noreferrer">
+                Видео кампуса
+              </a>
+            </Button>
+          )}
+        </div>
+      </div>
+    </motion.article>
+  )
+}
+
+function Universities({ universities }: { universities: University[] }) {
+  const [kind, setKind] = useState<University["kind"] | "all">("all")
+  const [province, setProvince] = useState("all")
+  if (!universities.length) return null
+  const provinces = [...new Set(universities.map((u) => u.province).filter(Boolean))]
+  const kinds = (["university", "college"] as const).filter((k) => universities.some((u) => u.kind === k))
+  const shown = universities.filter((u) => (kind === "all" || u.kind === kind) && (province === "all" || u.province === province))
+  const pill = (active: boolean) =>
+    cn("relative rounded-full px-4 py-2 text-sm font-medium transition-colors", active ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground")
+  return (
+    <section id="universities" className="mx-auto max-w-6xl px-4 py-24 md:py-32">
+      <div className="mb-10 flex flex-col justify-between gap-6 md:flex-row md:items-end">
+        <div>
+          <Eyebrow>Университеты и колледжи</Eyebrow>
+          <MaskHeading text="Где можно учиться" className="mt-5 text-4xl font-extrabold tracking-[-0.03em] md:text-6xl" />
+        </div>
+        <p className="max-w-sm text-muted-foreground">Работаем напрямую с вузами Китая. Подберём университет, город и программу под ваш бюджет и цели.</p>
+      </div>
+
+      <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        {kinds.length > 1 ? (
+          <div className="flex w-fit gap-1 rounded-full border bg-muted/50 p-1">
+            {([["all", "Все"], ...kinds.map((k) => [k, k === "university" ? "Университеты" : "Колледжи"])] as [string, string][]).map(([k, label]) => (
+              <button key={k} onClick={() => setKind(k as typeof kind)} className={pill(kind === k)}>
+                {kind === k && <motion.span layoutId="uni-kind" className="absolute inset-0 rounded-full bg-primary" transition={{ type: "spring", stiffness: 380, damping: 32 }} />}
+                <span className="relative">{label}</span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <span />
+        )}
+        {provinces.length > 1 && (
+          <select value={province} onChange={(e) => setProvince(e.target.value)} className="h-10 w-fit rounded-full border bg-background px-4 text-sm" aria-label="Провинция">
+            <option value="all">Все провинции</option>
+            {provinces.map((p) => (
+              <option key={p} value={p}>
+                {p}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
+
+      <motion.div layout className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <AnimatePresence mode="popLayout">
+          {shown.map((u) => (
+            <UniversityCard key={u.id ?? u.name} u={u} />
+          ))}
+        </AnimatePresence>
+      </motion.div>
+
+      <Reveal className="mt-10 flex flex-col items-center justify-between gap-4 rounded-[1.75rem] border bg-muted/50 p-6 text-center md:flex-row md:text-left">
+        <p className="text-lg font-semibold">Не нашли нужный вуз? Мы работаем с университетами по всему Китаю.</p>
+        <Button asChild size="lg" className="shrink-0 rounded-full">
+          <a href="#contact">
+            Подобрать университет <ArrowRight />
+          </a>
+        </Button>
+      </Reveal>
+    </section>
+  )
+}
+
 /* ───────────── путь студента: линия рисуется при прокрутке ───────────── */
 
 function Path() {
@@ -706,6 +844,7 @@ export default function App() {
         <Hero />
         <Bento stats={content.stats} />
         <Programs programs={content.programs} />
+        <Universities universities={content.universities} />
         <Path />
         <Life gallery={content.gallery} />
         <Faq faq={content.faq} />
