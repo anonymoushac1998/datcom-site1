@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import type { University } from "@/content"
-import { supabase } from "@/lib/supabase"
+import { supabase, supabaseHost } from "@/lib/supabase"
 
 type Draft = University & { key: string }
 
@@ -30,7 +30,7 @@ const empty = (sort: number): Draft => ({
 
 export function UniversitiesPage() {
   const [rows, setRows] = useState<Draft[]>([])
-  const [missing, setMissing] = useState(false)
+  const [missing, setMissing] = useState<null | { table: boolean; text: string }>(null)
   const [uploading, setUploading] = useState<string | null>(null)
   const file = useRef<HTMLInputElement>(null)
   const target = useRef<string | null>(null)
@@ -42,7 +42,8 @@ export function UniversitiesPage() {
       .order("sort")
       .then(({ data, error }) => {
         if (error) {
-          setMissing(true)
+          const table = error.code === "42P01" || error.code === "PGRST205" || /does not exist|schema cache/i.test(error.message)
+          setMissing({ table, text: [error.code, error.message].filter(Boolean).join(": ") })
           return
         }
         setRows((data as University[]).map((u) => ({ ...u, video_url: u.video_url ?? "", key: String(u.id) })))
@@ -102,9 +103,19 @@ export function UniversitiesPage() {
     return (
       <div className="max-w-2xl space-y-3 rounded-2xl border bg-card p-6">
         <h1 className="text-2xl font-bold">Университеты</h1>
-        <p>
-          В базе ещё нет таблицы университетов. Откройте Supabase → SQL Editor, вставьте файл <code>supabase/002_universities.sql</code> из
-          репозитория и нажмите Run, затем обновите эту страницу.
+        {missing.table ? (
+          <p>
+            В базе ещё нет таблицы университетов. Откройте Supabase → SQL Editor, вставьте файл <code>supabase/002_universities.sql</code> из
+            репозитория и нажмите Run, затем обновите эту страницу.
+          </p>
+        ) : (
+          <p>
+            Таблица есть, но Supabase не отдаёт данные. Запустите в SQL Editor файл <code>supabase/002_universities.sql</code> ещё раз (в нём
+            есть нужные права доступа) и обновите страницу.
+          </p>
+        )}
+        <p className="text-sm text-muted-foreground">
+          Проект: {supabaseHost}. Ответ Supabase: <code>{missing.text}</code>
         </p>
       </div>
     )

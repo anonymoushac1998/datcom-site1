@@ -17,6 +17,10 @@ create table if not exists public.universities (
   sort int not null default 0
 );
 
+-- Права для API сайта (в новых проектах Supabase их нужно выдавать явно).
+grant select on public.universities to anon, authenticated;
+grant insert, update, delete on public.universities to authenticated;
+
 alter table public.universities enable row level security;
 drop policy if exists "public read published" on public.universities;
 create policy "public read published" on public.universities for select to anon, authenticated using (published or public.is_admin());
@@ -33,3 +37,6 @@ select * from (values
   ('Колледж в Суйнине', 'college', 'Суйнин (рядом с Чэнду)', 'Сычуань', 'Программа 1+2, аттестат 9 классов.', '$600 в год, не возвращается', 'От 17 лет, интервью', '', false, 5)
 ) v(name, kind, city, province, programs, cost, conditions, image, featured, sort)
 where not exists (select 1 from public.universities);
+
+-- Чтобы API сразу увидел таблицу.
+notify pgrst, 'reload schema';
