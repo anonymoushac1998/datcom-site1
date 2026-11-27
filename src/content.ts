@@ -120,3 +120,28 @@ export const faq = [
     a: "Да. Встречаем в аэропорту, довозим до университета, помогаем пройти регистрацию, заселиться и поддерживаем в первые дни учёбы.",
   },
 ]
+
+export type University = {
+  id?: number
+  name: string
+  kind: "university" | "college"
+  city: string
+  province: string
+  programs: string
+  cost: string
+  conditions: string
+  image: string
+  video_url?: string
+  featured?: boolean
+  published?: boolean
+  sort?: number
+}
+
+// Колледжи, названные в презентации. Остальные вузы добавляются через админку.
+export const universities: University[] = [
+  { name: "Jiangxi Fenglin College of Foreign Economy & Trade", kind: "college", city: "Наньчан", province: "Цзянси", programs: "Digital Media, E-commerce. На базе 9 класса, 50 мест.", cost: "$1 500 в год — обучение и проживание", conditions: "С 15–16 лет. Студенты из Кыргызстана поступают только через Datcom.", image: "/img/jiangxi.jpg", featured: true },
+  { name: "Колледж в Янчэне", kind: "college", city: "Янчэн", province: "Цзянсу", programs: "Программа 1+2, E-commerce. До 20 студентов в год.", cost: "Депозит $800 в год, возвращается в декабре при соблюдении правил", conditions: "От 16,5 лет, интервью", image: "" },
+  { name: "Колледж в Хуайане", kind: "college", city: "Хуайань", province: "Цзянсу", programs: "Программа 1+2, International Business и E-commerce.", cost: "Обучение бесплатно, проживание до $300 в год", conditions: "От 16,5 лет, интервью", image: "" },
+  { name: "Колледж в Цзинане", kind: "college", city: "Цзинань", province: "Шаньдун", programs: "На базе 9 класса, E-commerce.", cost: "Обучение и проживание бесплатно; возможный депозит 1 000 юаней", conditions: "От 16,5 лет", image: "" },
+  { name: "Колледж в Суйнине", kind: "college", city: "Суйнин (рядом с Чэнду)", province: "Сычуань", programs: "Программа 1+2, аттестат 9 классов.", cost: "$600 в год, не возвращается", conditions: "От 17 лет, интервью", image: "" },
+]

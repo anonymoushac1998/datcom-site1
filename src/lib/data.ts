@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 
-import { faq as faqStatic, gallery as galleryStatic, programs as programsStatic, type Program } from "@/content"
+import { faq as faqStatic, gallery as galleryStatic, programs as programsStatic, universities as universitiesStatic, type Program, type University } from "@/content"
 import { supabase } from "@/lib/supabase"
 
 export type FaqItem = { id?: number; q: string; a: string; sort?: number }
@@ -29,9 +29,10 @@ export type SiteContent = {
   faq: FaqItem[]
   gallery: GalleryItem[]
   stats: Stats
+  universities: University[]
 }
 
-const fallback: SiteContent = { programs: programsStatic, faq: faqStatic, gallery: galleryStatic, stats: defaultStats }
+const fallback: SiteContent = { programs: programsStatic, faq: faqStatic, gallery: galleryStatic, stats: defaultStats, universities: universitiesStatic }
 
 /** Контент сайта: сразу встроенные тексты, затем данные из базы (если Supabase подключён). */
 export function useSiteContent(): SiteContent {
@@ -41,11 +42,12 @@ export function useSiteContent(): SiteContent {
     const sb = supabase
     let alive = true
     ;(async () => {
-      const [p, f, g, s] = await Promise.all([
+      const [p, f, g, s, u] = await Promise.all([
         sb.from("programs").select("*").order("sort"),
         sb.from("faq").select("*").order("sort"),
         sb.from("gallery").select("*").order("sort"),
         sb.from("settings").select("value").eq("key", "stats").maybeSingle(),
+        sb.from("universities").select("*").eq("published", true).order("sort"),
       ])
       if (!alive) return
       setContent({
@@ -53,6 +55,8 @@ export function useSiteContent(): SiteContent {
         faq: f.data?.length ? (f.data as FaqItem[]) : fallback.faq,
         gallery: g.data?.length ? (g.data as GalleryItem[]) : fallback.gallery,
         stats: { ...defaultStats, ...((s.data?.value as Partial<Stats>) ?? {}) },
+        // таблицы может ещё не быть (002_universities.sql не запущен) — тогда встроенный список
+        universities: u.error ? fallback.universities : (u.data as University[]),
       })
     })().catch(() => {})
     return () => {

@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react"
 import type { Session } from "@supabase/supabase-js"
-import { FileQuestion, Images, Inbox, LayoutGrid, LogOut, Sigma } from "lucide-react"
+import { FileQuestion, GraduationCap, Images, Inbox, LayoutGrid, LogOut, Sigma } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,10 +13,12 @@ import { ProgramsPage } from "./ProgramsPage"
 import { FaqPage } from "./FaqPage"
 import { GalleryPage } from "./GalleryPage"
 import { StatsPage } from "./StatsPage"
+import { UniversitiesPage } from "./UniversitiesPage"
 
 const pages = [
   { id: "leads", label: "Заявки", icon: Inbox, el: <LeadsPage /> },
   { id: "programs", label: "Программы", icon: LayoutGrid, el: <ProgramsPage /> },
+  { id: "universities", label: "Университеты", icon: GraduationCap, el: <UniversitiesPage /> },
   { id: "faq", label: "Вопросы", icon: FileQuestion, el: <FaqPage /> },
   { id: "gallery", label: "Фото", icon: Images, el: <GalleryPage /> },
   { id: "stats", label: "Цифры", icon: Sigma, el: <StatsPage /> },
